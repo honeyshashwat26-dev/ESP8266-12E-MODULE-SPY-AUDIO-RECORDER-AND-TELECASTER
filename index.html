@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+Global Live Audio
+</title>
+
+
+<!-- MQTT.js -->
+
+<script
+  src="https://unpkg.com/mqtt@5.14.1/dist/mqtt.min.js">
+</script>
+
+
+<style>
+
+* {
+  box-sizing: border-box;
+}
+
+
+body {
+
+  margin: 0;
+
+  min-height: 100vh;
+
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+
+  background:
+    linear-gradient(
+      135deg,
+      #06101d,
+      #10213a
+    );
+
+  color:
+    white;
+}
+
+
+header {
+
+  padding:
+    20px 25px;
+
+  background:
+    rgba(
+      5,
+      15,
+      28,
+      .95
+    );
+
+  border-bottom:
+    1px solid #253a58;
+}
+
+
+.logo {
+
+  font-size:
+    22px;
+
+  font-weight:
+    bold;
+}
+
+
+.connection {
+
+  margin-top:
+    6px;
+
+  color:
+    #91a6c2;
+
+  font-size:
+    13px;
+}
+
+
+main {
+
+  width:
+    min(
+      100% - 30px,
+      1050px
+    );
+
+  margin:
+    auto;
+
+  padding:
+    30px 0;
+}
+
+
+h1 {
+
+  margin:
+    0 0 6px 0;
+}
+
+
+.subtitle {
+
+  color:
+    #91a6c2;
+}
+
+
+#devices {
+
+  display:
+    grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(
+        260px,
+        1fr
+      )
+    );
+
+  gap:
+    18px;
+
+  margin-top:
+    30px;
+}
+
+
+.card {
+
+  background:
+    rgba(
+      16,
+      29,
+      49,
+      .96
+    );
+
+  border:
+    1px solid #2a4161;
+
+  border-radius:
+    18px;
+
+  padding:
+    20px;
+
+  min-height:
+    205px;
+
+  cursor:
+    pointer;
+
+  transition:
+    .2s;
+}
+
+
+.card:hover {
+
+  transform:
+    translateY(
+      -4px
+    );
+
+  border-color:
+    #4d8dff;
+
+  box-shadow:
+    0 12px 35px
+    rgba(
+      0,
+      0,
+      0,
+      .25
+    );
+}
+
+
+.card.error {
+
+  border-color:
+    #6b2c39;
+
+}
+
+
+.row {
+
+  display:
+    flex;
+
+  justify-content:
+    space-between;
+
+  align-items:
+    center;
+}
+
+
+.mic {
+
+  font-size:
+    45px;
+}
+
+
+.statusLive {
+
+  color:
+    #61e69b;
+
+  font-size:
+    12px;
+
+  font-weight:
+    bold;
+}
+
+
+.statusError {
+
+  color:
+    #ff6178;
+
+  font-size:
+    12px;
+
+  font-weight:
+    bold;
+}
+
+
+.dot {
+
+  display:
+    inline-block;
+
+  width:
+    9px;
+
+  height:
+    9px;
+
+  margin-right:
+    5px;
+
+  border-radius:
+    50%;
+
+  background:
+    #ff4662;
+
+  animation:
+    blink 1s infinite;
+}
+
+
+@keyframes blink {
+
+  50% {
+
+    opacity:
+      .3;
+
+  }
+
+}
+
+
+.card h2 {
+
+  margin:
+    20px 0 8px;
+}
+
+
+.card p {
+
+  color:
+    #91a6c2;
+
+  font-size:
+    14px;
+
+  line-height:
+    1.5;
+}
+
+
+.errorText {
+
+  color:
+    #ff7184 !important;
+
+}
+
+
+#empty {
+
+  margin-top:
+    70px;
+
+  text-align:
+    center;
+
+  color:
+    #7186a4;
+}
+
+
+#player {
+
+  display:
+    none;
+
+  max-width:
+    680px;
+
+  margin:
+    30px auto;
+
+  padding:
+    25px;
+
+  background:
+    #101d31;
+
+  border:
+    1px solid #2a4161;
+
+  border-radius:
+    20px;
+}
+
+
+.back {
+
+  padding:
+    10px 15px;
+
+  border:
+    0;
+
+  border-radius:
+    10px;
+
+  background:
+    #273b59;
+
+  color:
+    white;
+
+  cursor:
+    pointer;
+}
+
+
+.audioPanel {
+
+  margin-top:
+    25px;
+
+  padding:
+    25px;
+
+  background:
+    #07111f;
+
+  border-radius:
+    16px;
+
+  text-align:
+    center;
+}
+
+
+.bigMic {
+
+  font-size:
+    65px;
+}
+
+
+#visualizer {
+
+  width:
+    100%;
+
+  height:
+    110px;
+
+  margin-top:
+    20px;
+
+  border-radius:
+    12px;
+
+  background:
+    #0c192b;
+}
+
+
+#playerStatus {
+
+  margin-top:
+    15px;
+
+  color:
+    #91a6c2;
+
+  line-height:
+    1.5;
+}
+
+
+.listen {
+
+  width:
+    100%;
+
+  margin-top:
+    20px;
+
+  padding:
+    15px;
+
+  border:
+    0;
+
+  border-radius:
+    12px;
+
+  background:
+    #3378ff;
+
+  color:
+    white;
+
+  font-size:
+    16px;
+
+  font-weight:
+    bold;
+
+  cursor:
+    pointer;
+}
+
+
+.listen:disabled {
+
+  opacity:
+    .5;
+
+  cursor:
+    not-allowed;
+}
+
+
+.warning {
+
+  margin-top:
+    15px;
+
+  padding:
+    12px;
+
+  border-radius:
+    10px;
+
+  background:
+    #321923;
+
+  color:
+    #ff8495;
+
+  font-size:
+    13px;
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+<div class="logo">
+
+🎙 Global Live Audio
+
+</div>
+
+
+<div
+  id="connection"
+  class="connection"
+>
+
+Connecting to global network...
+
+</div>
+
+</header>
+
+
+<main>
+
+
+<!-- =====================================================
+     DISCOVERY PAGE
+====================================================== -->
+
+<section
+  id="home"
+>
+
+
+<h1>
+
+Live Recorders
+
+</h1>
+
+
+<div class="subtitle">
+
+Connected recorders are automatically discovered.
+
+</div>
+
+
+<div
+  id="devices"
+></div>
+
+
+<div
+  id="empty"
+>
+
+Waiting for a recorder to come online...
+
+</div>
+
+
+</section>
+
+
+
+<!-- =====================================================
+     PLAYER
+====================================================== -->
+
+<section
+  id="player"
+>
+
+
+<button
+  class="back"
+  onclick="closePlayer()"
+>
+
+← Back
+
+</button>
+
+
+<h1
+  id="playerTitle"
+  style="margin-top:20px"
+>
+
+Recorder
+
+</h1>
+
+
+<div
+  class="audioPanel"
+>
+
+
+<div class="bigMic">
+
+🎙️
+
+</div>
+
+
+<canvas
+  id="visualizer"
+></canvas>
+
+
+<div
+  id="playerStatus"
+>
+
+Waiting...
+
+</div>
+
+
+<button
+  id="listenButton"
+  class="listen"
+  onclick="startListening()"
+>
+
+🔊 START LISTENING
+
+</button>
+
+
+</div>
+
+
+</section>
+
+
+</main>
+
+
+<script>
+
+
+// ========================================================
+// CONFIGURATION
+// ========================================================
+
+const MQTT_URL =
+  "wss://broker.emqx.io:8084/mqtt";
+
+
+const DISCOVERY_TOPIC =
+  "global-audio/discovery";
+
+
+const AUDIO_PREFIX =
+  "global-audio/";
+
+
+// ========================================================
+// STATE
+// ========================================================
+
+const recorders =
+  new Map();
+
+
+let selectedRecorder =
+  null;
+
+
+let audioContext =
+  null;
+
+
+let analyser =
+  null;
+
+
+let nextPlayTime =
+  0;
+
+
+let visualizerAnimation =
+  null;
+
+
+let mqttClient =
+  null;
+
+
+// ========================================================
+// CREATE UNIQUE BROWSER CLIENT ID
+// ========================================================
+
+const browserClientId =
+  "browser-" +
+  Math.random()
+    .toString(16)
+    .slice(2) +
+  "-" +
+  Date.now();
+
+
+// ========================================================
+// MQTT CONNECT
+// ========================================================
+
+mqttClient =
+  mqtt.connect(
+    MQTT_URL,
+    {
+
+      clientId:
+        browserClientId,
+
+      clean:
+        true,
+
+      reconnectPeriod:
+        2000,
+
+      connectTimeout:
+        10000,
+
+      protocolVersion:
+        4
+
+    }
+  );
+
+
+// ========================================================
+// MQTT CONNECTED
+// ========================================================
+
+mqttClient.on(
+  "connect",
+
+  function () {
+
+    setConnection(
+      "🟢 Global network connected"
+    );
+
+
+    mqttClient.subscribe(
+      DISCOVERY_TOPIC,
+
+      function (error) {
+
+        if (error) {
+
+          console.error(
+            error
+          );
+
+        }
+
+      }
+    );
+
+  }
+);
+
+
+// ========================================================
+// MQTT OFFLINE
+// ========================================================
+
+mqttClient.on(
+  "offline",
+
+  function () {
+
+    setConnection(
+      "🟠 Reconnecting to global network..."
+    );
+
+  }
+);
+
+
+// ========================================================
+// MQTT ERROR
+// ========================================================
+
+mqttClient.on(
+  "error",
+
+  function (error) {
+
+    console.error(
+      "MQTT error:",
+      error
+    );
+
+
+    setConnection(
+      "🔴 MQTT connection error"
+    );
+
+  }
+);
+
+
+// ========================================================
+// MQTT MESSAGE
+// ========================================================
+
+mqttClient.on(
+
+  "message",
+
+  function (
+    topic,
+    payload
+  ) {
+
+
+    // ----------------------------------------------------
+    // DISCOVERY MESSAGE
+    // ----------------------------------------------------
+
+    if (
+      topic ===
+      DISCOVERY_TOPIC
+    ) {
+
+      processDiscovery(
+        payload
+      );
+
+      return;
+    }
+
+
+    // ----------------------------------------------------
+    // AUDIO MESSAGE
+    // ----------------------------------------------------
+
+    if (
+      selectedRecorder &&
+      topic ===
+      selectedRecorder.audioTopic
+    ) {
+
+      receiveAudio(
+        payload
+      );
+
+    }
+
+  }
+
+);
+
+
+// ========================================================
+// DISCOVERY
+// ========================================================
+
+function processDiscovery(
+  payload
+) {
+
+  try {
+
+    const data =
+      JSON.parse(
+        new TextDecoder()
+          .decode(payload)
+      );
+
+
+    if (
+      !data.peerId
+    ) {
+
+      return;
+
+    }
+
+
+    data.lastSeen =
+      Date.now();
+
+
+    /*
+      Construct the audio topic
+      from the device ID if the
+      firmware doesn't provide it.
+    */
+
+    data.audioTopic =
+      data.audioTopic ||
+      (
+        AUDIO_PREFIX +
+        data.peerId +
+        "/audio"
+      );
+
+
+    recorders.set(
+      data.peerId,
+      data
+    );
+
+
+    renderRecorders();
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      "Discovery parse error:",
+      error
+    );
+
+  }
+
+}
+
+
+// ========================================================
+// RENDER RECORDERS
+// ========================================================
+
+function renderRecorders() {
+
+  const container =
+    document.getElementById(
+      "devices"
+    );
+
+
+  container.innerHTML =
+    "";
+
+
+  const now =
+    Date.now();
+
+
+  let visibleCount =
+    0;
+
+
+  recorders.forEach(
+
+    function (
+      recorder,
+      id
+    ) {
+
+
+      /*
+        Remove recorder if we haven't
+        heard from it for 12 seconds.
+      */
+
+      if (
+        now -
+        recorder.lastSeen
+        >
+        12000
+      ) {
+
+        recorders.delete(
+          id
+        );
+
+        return;
+
+      }
+
+
+      visibleCount++;
+
+
+      const micError =
+        recorder.status ===
+        "MIC_ERROR" ||
+        recorder.microphone ===
+        "NOT_DETECTED";
+
+
+      const card =
+        document.createElement(
+          "div"
+        );
+
+
+      card.className =
+        micError
+          ? "card error"
+          : "card";
+
+
+      if (
+        micError
+      ) {
+
+
+        card.innerHTML = `
+
+          <div class="row">
+
+            <div class="mic">
+              🎙️
+            </div>
+
+            <div class="statusError">
+              🔴 MIC ERROR
+            </div>
+
+          </div>
+
+
+          <h2>
+
+            ${safe(
+              recorder.name ||
+              "Recorder"
+            )}
+
+          </h2>
+
+
+          <p class="errorText">
+
+            ⚠️ INMP441 microphone
+            signal not detected.
+
+          </p>
+
+
+          <p>
+
+            Check:
+
+            <br>
+            VDD → 3.3V
+            <br>
+            GND → GND
+            <br>
+            SCK → D7
+            <br>
+            WS → D5
+            <br>
+            SD → D6
+
+          </p>
+
+        `;
+
+
+        card.onclick =
+          function () {
+
+            alert(
+              "Microphone error: the ESP8266 is online, but the INMP441 is not producing a valid microphone signal."
+            );
+
+          };
+
+
+      }
+
+      else {
+
+
+        card.innerHTML = `
+
+          <div class="row">
+
+            <div class="mic">
+              🎙️
+            </div>
+
+            <div class="statusLive">
+
+              <span class="dot"></span>
+
+              LIVE
+
+            </div>
+
+          </div>
+
+
+          <h2>
+
+            ${safe(
+              recorder.name ||
+              "Recorder"
+            )}
+
+          </h2>
+
+
+          <p>
+
+            🎙 Microphone OK
+
+          </p>
+
+
+          <p>
+
+            ${recorder.sampleRate || 16000}
+            Hz ·
+            ${safe(
+              recorder.format ||
+              "PCM16"
+            )}
+
+          </p>
+
+
+          <p>
+
+            Click to listen live.
+
+          </p>
+
+        `;
+
+
+        card.onclick =
+          function () {
+
+            openRecorder(
+              recorder
+            );
+
+          };
+
+      }
+
+
+      container.appendChild(
+        card
+      );
+
+    }
+  );
+
+
+  document.getElementById(
+    "empty"
+  ).style.display =
+    visibleCount === 0
+      ? "block"
+      : "none";
+}
+
+
+// ========================================================
+// REMOVE DEAD RECORDERS
+// ========================================================
+
+setInterval(
+
+  function () {
+
+    renderRecorders();
+
+  },
+
+  3000
+
+);
+
+
+// ========================================================
+// OPEN RECORDER
+// ========================================================
+
+function openRecorder(
+  recorder
+) {
+
+  selectedRecorder =
+    recorder;
+
+
+  document.getElementById(
+    "home"
+  ).style.display =
+    "none";
+
+
+  document.getElementById(
+    "player"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "playerTitle"
+  ).textContent =
+    recorder.name ||
+    "Recorder";
+
+
+  document.getElementById(
+    "playerStatus"
+  ).textContent =
+    "Recorder online. Press START LISTENING.";
+
+
+  document.getElementById(
+    "listenButton"
+  ).disabled =
+    false;
+
+
+  subscribeToAudio();
+
+}
+
+
+// ========================================================
+// SUBSCRIBE AUDIO
+// ========================================================
+
+function subscribeToAudio() {
+
+  if (
+    !selectedRecorder
+  ) {
+
+    return;
+  }
+
+
+  mqttClient.subscribe(
+
+    selectedRecorder.audioTopic,
+
+    {
+      qos: 0
+    },
+
+    function (error) {
+
+      if (error) {
+
+        console.error(
+          "Audio subscribe error:",
+          error
+        );
+
+      }
+
+    }
+  );
+
+}
+
+
+// ========================================================
+// START LISTENING
+// ========================================================
+
+async function startListening() {
+
+  if (
+    !selectedRecorder
+  ) {
+
+    return;
+  }
+
+
+  try {
+
+
+    if (
+      !audioContext
+    ) {
+
+      audioContext =
+        new (
+          window.AudioContext ||
+          window.webkitAudioContext
+        )({
+          sampleRate:
+            16000
+        });
+
+    }
+
+
+    await audioContext.resume();
+
+
+    analyser =
+      audioContext.createAnalyser();
+
+
+    analyser.fftSize =
+      256;
+
+
+    analyser.smoothingTimeConstant =
+      0.8;
+
+
+    analyser.connect(
+      audioContext.destination
+    );
+
+
+    nextPlayTime =
+      audioContext.currentTime;
+
+
+    document.getElementById(
+      "playerStatus"
+    ).textContent =
+      "🔴 LIVE — receiving microphone audio";
+
+
+    document.getElementById(
+      "listenButton"
+    ).textContent =
+      "🔊 LISTENING";
+
+
+    document.getElementById(
+      "listenButton"
+    ).disabled =
+      true;
+
+
+    startVisualizer();
+
+  }
+
+  catch (
+    error
+  ) {
+
+    console.error(
+      error
+    );
+
+
+    document.getElementById(
+      "playerStatus"
+    ).textContent =
+      "Browser audio could not be started. Click START LISTENING again.";
+
+  }
+
+}
+
+
+// ========================================================
+// RECEIVE AUDIO
+// ========================================================
+
+function receiveAudio(
+  payload
+) {
+
+  if (
+    !audioContext
+  ) {
+
+    return;
+  }
+
+
+  /*
+    MQTT.js normally provides
+    the payload as Uint8Array.
+
+    2 bytes = 1 signed 16-bit
+    PCM sample.
+  */
+
+
+  const bytes =
+    payload;
+
+
+  const sampleCount =
+    Math.floor(
+      bytes.length / 2
+    );
+
+
+  if (
+    sampleCount <= 0
+  ) {
+
+    return;
+  }
+
+
+  const samples =
+    new Float32Array(
+      sampleCount
+    );
+
+
+  for (
+    let i = 0;
+    i < sampleCount;
+    i++
+  ) {
+
+
+    const low =
+      bytes[
+        i * 2
+      ];
+
+
+    const high =
+      bytes[
+        i * 2 + 1
+      ];
+
+
+    let value =
+      low |
+      (
+        high << 8
+      );
+
+
+    if (
+      value &
+      0x8000
+    ) {
+
+      value -=
+        65536;
+
+    }
+
+
+    samples[i] =
+      value /
+      32768;
+
+  }
+
+
+  playSamples(
+    samples
+  );
+
+}
+
+
+// ========================================================
+// PLAY PCM
+// ========================================================
+
+function playSamples(
+  samples
+) {
+
+  if (
+    !audioContext
+  ) {
+
+    return;
+  }
+
+
+  const buffer =
+    audioContext.createBuffer(
+
+      1,
+
+      samples.length,
+
+      16000
+
+    );
+
+
+  buffer
+    .getChannelData(0)
+    .set(
+      samples
+    );
+
+
+  const source =
+    audioContext.createBufferSource();
+
+
+  source.buffer =
+    buffer;
+
+
+  if (
+    analyser
+  ) {
+
+    source.connect(
+      analyser
+    );
+
+  }
+
+  else {
+
+    source.connect(
+      audioContext.destination
+    );
+
+  }
+
+
+  const currentTime =
+    audioContext.currentTime;
+
+
+  /*
+    Keep the audio stream
+    slightly ahead to reduce
+    gaps caused by network
+    jitter.
+  */
+
+  if (
+    nextPlayTime <
+    currentTime
+  ) {
+
+    nextPlayTime =
+      currentTime +
+      0.05;
+
+  }
+
+
+  source.start(
+    nextPlayTime
+  );
+
+
+  nextPlayTime +=
+    buffer.duration;
+
+}
+
+
+// ========================================================
+// VISUALIZER
+// ========================================================
+
+function startVisualizer() {
+
+  const canvas =
+    document.getElementById(
+      "visualizer"
+    );
+
+
+  const ctx =
+    canvas.getContext(
+      "2d"
+    );
+
+
+  function resize() {
+
+    canvas.width =
+      canvas.clientWidth;
+
+
+    canvas.height =
+      canvas.clientHeight;
+
+  }
+
+
+  resize();
+
+
+  window.addEventListener(
+    "resize",
+    resize
+  );
+
+
+  const data =
+    new Uint8Array(
+      128
+    );
+
+
+  function draw() {
+
+    visualizerAnimation =
+      requestAnimationFrame(
+        draw
+      );
+
+
+    ctx.clearRect(
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+
+    if (
+      !analyser
+    ) {
+
+      return;
+    }
+
+
+    analyser.getByteFrequencyData(
+      data
+    );
+
+
+    const barWidth =
+      canvas.width /
+      data.length;
+
+
+    for (
+      let i = 0;
+      i < data.length;
+      i++
+    ) {
+
+      const height =
+        (
+          data[i] /
+          255
+        ) *
+        canvas.height;
+
+
+      ctx.fillStyle =
+        "#4d8dff";
+
+
+      ctx.fillRect(
+
+        i *
+        barWidth,
+
+        canvas.height -
+        height,
+
+        Math.max(
+          1,
+          barWidth - 1
+        ),
+
+        height
+
+      );
+
+    }
+
+  }
+
+
+  draw();
+
+}
+
+
+// ========================================================
+// CLOSE PLAYER
+// ========================================================
+
+function closePlayer() {
+
+
+  if (
+    selectedRecorder
+  ) {
+
+    mqttClient.unsubscribe(
+      selectedRecorder.audioTopic
+    );
+
+  }
+
+
+  selectedRecorder =
+    null;
+
+
+  document.getElementById(
+    "player"
+  ).style.display =
+    "none";
+
+
+  document.getElementById(
+    "home"
+  ).style.display =
+    "block";
+
+
+  document.getElementById(
+    "listenButton"
+  ).textContent =
+    "🔊 START LISTENING";
+
+
+  document.getElementById(
+    "listenButton"
+  ).disabled =
+    false;
+
+
+  if (
+    visualizerAnimation
+  ) {
+
+    cancelAnimationFrame(
+      visualizerAnimation
+    );
+
+  }
+
+}
+
+
+// ========================================================
+// CONNECTION STATUS
+// ========================================================
+
+function setConnection(
+  text
+) {
+
+  document.getElementById(
+    "connection"
+  ).textContent =
+    text;
+
+}
+
+
+// ========================================================
+// SAFE HTML
+// ========================================================
+
+function safe(
+  value
+) {
+
+  return String(
+    value
+  )
+
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+
+    .replace(
+      /</g,
+      "&lt;"
+    )
+
+    .replace(
+      />/g,
+      "&gt;"
+    )
+
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+
+    .replace(
+      /'/g,
+      "&#039;"
+    );
+
+}
+
+</script>
+
+</body>
+
+</html>
